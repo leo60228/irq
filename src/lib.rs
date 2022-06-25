@@ -66,7 +66,7 @@ mod readme;
 
 use core::fmt;
 use core::marker::PhantomData;
-use core::sync::atomic::{AtomicUsize, Ordering};
+use core::cell::UnsafeCell;
 
 /// Hooks interrupts and makes them available to the [`scope`] API.
 ///
@@ -314,25 +314,30 @@ impl<'a> fmt::Debug for Handler<'a> {
 /// Private API for use by the `scoped_interrupts!` macro. Do not use.
 #[doc(hidden)]
 pub struct HandlerAddr {
-    addr: AtomicUsize,
+    addr: UnsafeCell<usize>,
 }
+
+unsafe impl Sync for HandlerAddr {}
 
 impl HandlerAddr {
     #[inline(always)]
     pub const fn new() -> Self {
         Self {
-            addr: AtomicUsize::new(0),
+            addr: UnsafeCell::new(0),
         }
     }
 
     #[inline(always)]
     pub fn load(&self) -> usize {
-        self.addr.load(Ordering::Acquire)
+        unsafe {
+            *self.addr.get()
+        }
     }
 
     #[inline(always)]
     pub unsafe fn store(&self, addr: usize) {
-        self.addr.store(addr, Ordering::Release)
+        // SAFETY: lol. lmao
+        *self.addr.get() = addr;
     }
 }
 
