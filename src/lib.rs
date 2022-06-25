@@ -138,7 +138,7 @@ macro_rules! scoped_interrupts {
         $(
             #[$hook_attr]
             #[allow(bad_style, dead_code)]
-            unsafe fn $interrupt() {
+            pub extern "C" unsafe fn $interrupt() {
                 let handler = self::statics::$interrupt.load();
                 if handler == 0 {
                     if cfg!(debug_assertions) {
